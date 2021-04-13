@@ -1,48 +1,45 @@
-import React, { Component } from 'react';
-import Grid from '@material-ui/core/Grid';
-import PropTypes from 'prop-types';
+import React, { useContext } from 'react';
+import { useQuery } from '@apollo/react-hooks';
+import { Grid, Transition } from 'semantic-ui-react';
 
-import Scream from '../components/scream/Scream';
-import Profile from '../components/profile/Profile';
-import ScreamSkeleton from '../util/ScreamSkeleton';
+import { AuthContext } from '../context/auth';
+import PostCard from '../components/PostCard';
+import PostForm from '../components/PostForm';
+import { FETCH_POSTS_QUERY } from '../util/graphql';
 
-import { connect } from 'react-redux';
-import { getScreams } from '../redux/actions/dataActions';
+function Home() {
+  const { user } = useContext(AuthContext);
+  const {
+    loading,
+    data: { getPosts: posts }
+  } = useQuery(FETCH_POSTS_QUERY);
 
-class home extends Component {
-  componentDidMount() {
-    this.props.getScreams();
-  }
-  render() {
-    const { screams, loading } = this.props.data;
-    let recentScreamsMarkup = !loading ? (
-      screams.map((scream) => <Scream key={scream.screamId} scream={scream} />)
-    ) : (
-      <ScreamSkeleton />
-    );
-    return (
-      <Grid container spacing={16}>
-        <Grid item sm={8} xs={12}>
-          {recentScreamsMarkup}
-        </Grid>
-        <Grid item sm={4} xs={12}>
-          <Profile />
-        </Grid>
-      </Grid>
-    );
-  }
+  return (
+    <Grid columns={3}>
+      <Grid.Row className="page-title">
+        <h1>Recent Posts</h1>
+      </Grid.Row>
+      <Grid.Row>
+        {user && (
+          <Grid.Column>
+            <PostForm />
+          </Grid.Column>
+        )}
+        {loading ? (
+          <h1>Loading posts..</h1>
+        ) : (
+          <Transition.Group>
+            {posts &&
+              posts.map((post) => (
+                <Grid.Column key={post.id} style={{ marginBottom: 20 }}>
+                  <PostCard post={post} />
+                </Grid.Column>
+              ))}
+          </Transition.Group>
+        )}
+      </Grid.Row>
+    </Grid>
+  );
 }
 
-home.propTypes = {
-  getScreams: PropTypes.func.isRequired,
-  data: PropTypes.object.isRequired
-};
-
-const mapStateToProps = (state) => ({
-  data: state.data
-});
-
-export default connect(
-  mapStateToProps,
-  { getScreams }
-)(home);
+export default Home;
